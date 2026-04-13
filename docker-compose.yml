@@ -1,0 +1,171 @@
+version: '3.9'
+
+services:
+  # ═══ Backend (FastAPI + PyTorch) ═══════════════════════════
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://omnivis:omnivis_secret@postgres:5432/omnivis
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_KEY=your-production-secret-key-change-this
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - model_weights:/app/models
+      - uploads:/app/uploads
+      - reports:/app/reports
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - omnivis-net
+
+  # ═══ Frontend (React + NGINX) ═════════════════════════════
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - omnivis-net
+
+  # ═══ PostgreSQL ═══════════════════════════════════════════
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: omnivis
+      POSTGRES_USER: omnivis
+      POSTGRES_PASSWORD: omnivis_secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omnivis"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - omnivis-net
+
+  # ═══ Redis ════════════════════════════════════════════════
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - omnivis-net
+
+  # ═══ Celery Worker ════════════════════════════════════════
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A workers.celery_app worker --loglevel=info --concurrency=2
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://omnivis:omnivis_secret@postgres:5432/omnivis
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - model_weights:/app/models
+      - uploads:/app/uploads
+      - reports:/app/reports
+    depends_on:
+      - redis
+      - postgres
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - omnivis-net
+
+  # ═══ NGINX Reverse Proxy ══════════════════════════════════
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    networks:
+      - omnivis-net
+
+  # ═══ Prometheus (Metrics) ═════════════════════════════════
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+    restart: unless-stopped
+    networks:
+      - omnivis-net
+
+  # ═══ Grafana (Visualization) ══════════════════════════════
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=omnivis
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - omnivis-net
+
+volumes:
+  postgres_data:
+  redis_data:
+  model_weights:
+  uploads:
+  reports:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  omnivis-net:
+    driver: bridge

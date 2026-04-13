@@ -1,0 +1,56 @@
+# OMNIVIS Backend Dependencies
+# Core
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+python-multipart==0.0.9
+websockets==12.0
+
+# ML / CV
+opencv-python-headless==4.9.0.80
+opencv-contrib-python-headless==4.9.0.80
+numpy>=1.24.0,<2.0.0
+torch>=2.1.0
+torchvision>=0.16.0
+ultralytics>=8.1.0
+onnxruntime>=1.17.0
+
+# Database
+sqlalchemy[asyncio]==2.0.30
+greenlet==2.0.2
+aiosqlite==0.22.1
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+alembic==1.13.0
+
+# Cache / Queue
+redis==5.0.0
+celery[redis]==5.3.6
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+httpx==0.27.0
+
+# ML / Anomaly
+scikit-learn>=1.3.0
+
+# Face
+# insightface>=0.7.3  # Optional — install separately
+# mediapipe>=0.10.9  # Optional — install separately
+
+# Reporting
+reportlab>=4.1.0
+
+# Monitoring
+psutil>=5.9.0
+prometheus-client>=0.20.0
+
+# Utils
+Pillow>=10.0.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+
+# Optional (install for full functionality)
+# pywt>=1.5.0  # Wavelet analysis
+# scipy>=1.11.0  # Matrix operations
