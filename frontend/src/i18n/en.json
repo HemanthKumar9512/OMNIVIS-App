@@ -1,0 +1,47 @@
+{
+  "app": {
+    "title": "OMNIVIS — Omniscient Vision Intelligence System",
+    "subtitle": "Vision Intelligence",
+    "connected": "Connected",
+    "disconnected": "Disconnected"
+  },
+  "modules": {
+    "detection": "Object Detection",
+    "segmentation": "Segmentation",
+    "face": "Face Analysis",
+    "optical_flow": "Optical Flow",
+    "depth": "Depth Estimation",
+    "reconstruction": "3D Reconstruction",
+    "tracking": "Multi-Object Tracking",
+    "scene_graph": "Scene Graph",
+    "trajectory": "Trajectory Prediction",
+    "anomaly": "Anomaly Detection",
+    "gait": "Gait Analysis",
+    "action": "Action Recognition"
+  },
+  "controls": {
+    "source": "Input Source",
+    "model": "Detection Model",
+    "confidence": "Confidence",
+    "nms": "NMS IoU",
+    "modules": "Modules",
+    "thresholds": "Thresholds"
+  },
+  "alerts": {
+    "normal": "All systems normal",
+    "suspicious": "Potential anomaly detected",
+    "anomaly": "Confirmed anomaly — immediate attention required",
+    "history": "Alert History",
+    "clear": "Clear"
+  },
+  "metrics": {
+    "fps": "FPS",
+    "latency": "Latency",
+    "detections": "Detections",
+    "tracks": "Active Tracks",
+    "system": "System Resources",
+    "gpu": "GPU",
+    "vram": "VRAM",
+    "cpu": "CPU"
+  }
+}

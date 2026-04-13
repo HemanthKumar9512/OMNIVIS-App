@@ -1,0 +1,30 @@
+{
+  "app": {
+    "title": "OMNIVIS — सर्वदर्शी दृष्टि बुद्धिमत्ता प्रणाली",
+    "subtitle": "दृष्टि बुद्धिमत्ता",
+    "connected": "जुड़ा हुआ",
+    "disconnected": "डिस्कनेक्ट"
+  },
+  "modules": {
+    "detection": "वस्तु पहचान",
+    "segmentation": "विभाजन",
+    "face": "चेहरा विश्लेषण",
+    "optical_flow": "ऑप्टिकल फ्लो",
+    "depth": "गहराई अनुमान",
+    "reconstruction": "3D पुनर्निर्माण",
+    "tracking": "बहु-वस्तु ट्रैकिंग",
+    "scene_graph": "दृश्य ग्राफ",
+    "trajectory": "प्रक्षेपवक्र भविष्यवाणी",
+    "anomaly": "विसंगति पहचान",
+    "gait": "चाल विश्लेषण",
+    "action": "क्रिया पहचान"
+  },
+  "controls": {
+    "source": "इनपुट स्रोत",
+    "model": "पहचान मॉडल",
+    "confidence": "विश्वास",
+    "nms": "NMS IoU",
+    "modules": "मॉड्यूल",
+    "thresholds": "दहलीज"
+  }
+}

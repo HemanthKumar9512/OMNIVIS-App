@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base Styles ─────────────────────────────────────────── */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 3px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.5);
+  }
+}
+
+/* ── Glass Morphism ──────────────────────────────────────── */
+@layer components {
+  .glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl;
+  }
+  .glass-strong {
+    @apply bg-white/10 backdrop-blur-xl border border-white/15 rounded-xl;
+  }
+  .glass-card {
+    @apply bg-gradient-to-br from-white/[0.07] to-white/[0.03] backdrop-blur-lg border border-white/10 rounded-2xl shadow-xl;
+  }
+  .glass-sidebar {
+    @apply bg-surface-900/80 backdrop-blur-2xl border-r border-white/5;
+  }
+
+  /* ── Buttons ───────────────────────────────────────────── */
+  .btn-primary {
+    @apply px-4 py-2 bg-gradient-to-r from-omni-500 to-omni-600 hover:from-omni-400 hover:to-omni-500
+           text-white font-medium rounded-lg transition-all duration-200
+           shadow-lg shadow-omni-500/25 hover:shadow-omni-400/40
+           active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20
+           text-white/80 hover:text-white font-medium rounded-lg transition-all duration-200
+           active:scale-[0.98];
+  }
+  .btn-danger {
+    @apply px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-400 hover:to-red-500
+           text-white font-medium rounded-lg transition-all duration-200
+           shadow-lg shadow-red-500/25 active:scale-[0.98];
+  }
+
+  /* ── Status Dots ───────────────────────────────────────── */
+  .status-dot {
+    @apply w-2.5 h-2.5 rounded-full;
+  }
+  .status-green {
+    @apply bg-emerald-400 shadow-lg shadow-emerald-400/50 animate-pulse-slow;
+  }
+  .status-yellow {
+    @apply bg-amber-400 shadow-lg shadow-amber-400/50 animate-pulse;
+  }
+  .status-red {
+    @apply bg-red-400 shadow-lg shadow-red-400/50 animate-pulse;
+  }
+
+  /* ── Canvas Panel ──────────────────────────────────────── */
+  .canvas-panel {
+    @apply relative overflow-hidden rounded-xl border border-white/10
+           bg-black/40 backdrop-blur-sm transition-all duration-300
+           hover:border-omni-500/30;
+  }
+  .canvas-panel.fullscreen {
+    @apply fixed inset-0 z-50 rounded-none border-0;
+  }
+
+  /* ── Metric Card ───────────────────────────────────────── */
+  .metric-card {
+    @apply glass-card p-4 flex flex-col gap-1;
+  }
+  .metric-value {
+    @apply text-2xl font-bold bg-gradient-to-r from-omni-300 to-omni-500 bg-clip-text text-transparent;
+  }
+  .metric-label {
+    @apply text-xs font-medium text-white/40 uppercase tracking-wider;
+  }
+
+  /* ── Detection Chip ────────────────────────────────────── */
+  .detection-chip {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
+           bg-white/5 border border-white/10 text-sm font-medium
+           transition-all duration-200 hover:bg-white/10 hover:border-white/20
+           cursor-default animate-fade-in;
+  }
+
+  /* ── Alert Banner ──────────────────────────────────────── */
+  .alert-banner {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl animate-slide-in;
+  }
+  .alert-green {
+    @apply bg-emerald-500/10 border border-emerald-500/20 text-emerald-300;
+  }
+  .alert-yellow {
+    @apply bg-amber-500/10 border border-amber-500/20 text-amber-300;
+  }
+  .alert-red {
+    @apply bg-red-500/10 border border-red-500/20 text-red-300;
+  }
+
+  /* ── Toggle Switch ────────────────────────────────────── */
+  .toggle-switch {
+    @apply relative w-10 h-5 rounded-full bg-white/10 border border-white/10
+           transition-all duration-300 cursor-pointer;
+  }
+  .toggle-switch.active {
+    @apply bg-omni-500/30 border-omni-500/50;
+  }
+  .toggle-switch::after {
+    content: '';
+    @apply absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white/50 transition-all duration-300;
+  }
+  .toggle-switch.active::after {
+    @apply translate-x-5 bg-omni-400;
+  }
+
+  /* ── Slider ───────────────────────────────────────────── */
+  .omni-slider {
+    @apply w-full h-1.5 rounded-full bg-white/10 appearance-none cursor-pointer;
+  }
+  .omni-slider::-webkit-slider-thumb {
+    @apply appearance-none w-4 h-4 rounded-full bg-omni-500 cursor-pointer
+           shadow-lg shadow-omni-500/50 hover:bg-omni-400 transition-colors;
+  }
+}
+
+/* ── Gradient Text ───────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8, #6366f1, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Animated Background Grid ────────────────────────────── */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Neon Glow Effect ────────────────────────────────────── */
+.neon-border {
+  box-shadow:
+    inset 0 0 15px rgba(99, 102, 241, 0.1),
+    0 0 15px rgba(99, 102, 241, 0.05);
+}
+
+/* ── Canvas Overlay ──────────────────────────────────────── */
+.canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.canvas-overlay .controls {
+  pointer-events: auto;
+}
