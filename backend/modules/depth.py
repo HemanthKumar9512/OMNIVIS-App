@@ -112,20 +112,18 @@ class DepthEstimator:
         return prediction.cpu().numpy()
 
     def _simulate_depth(self, frame: np.ndarray) -> np.ndarray:
-        """Simulate depth using gradient-based approach."""
+        """Fast depth simulation using gradient."""
         h, w = frame.shape[:2]
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
-        # Laplacian for texture/detail (closer objects have more detail)
-        laplacian = np.abs(cv2.Laplacian(gray, cv2.CV_32F))
-        laplacian = cv2.GaussianBlur(laplacian, (31, 31), 0)
-
-        # Vertical gradient (objects at bottom are typically closer)
-        vert_gradient = np.linspace(0.3, 1.0, h).reshape(-1, 1)
+        # Simple vertical gradient (bottom = closer)
+        vert_gradient = np.linspace(0.5, 2.0, h).reshape(-1, 1)
         vert_gradient = np.tile(vert_gradient, (1, w))
 
-        # Combine cues
-        depth = 0.6 * vert_gradient + 0.4 * (laplacian / max(laplacian.max(), 1e-6))
+        # Add noise
+        noise = np.random.random((h, w)) * 0.3
+        
+        depth = vert_gradient + noise
         return depth.astype(np.float32)
 
     def _depth_from_defocus(self, frame: np.ndarray) -> np.ndarray:

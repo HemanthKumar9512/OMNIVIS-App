@@ -3,6 +3,7 @@
  * Circular gauge charts for GPU utilization, memory, and inference latency.
  */
 import React from 'react'
+import { useOmnivisStore } from '../store/omnivis.store'
 
 interface GaugeProps {
   value: number
@@ -74,11 +75,16 @@ export const MetricGauge: React.FC<GaugeProps> = ({
 }
 
 export const MetricGaugeRow: React.FC = () => {
-  // In production these would come from real system metrics via WebSocket
-  const gpuUtil = 45
-  const gpuMem = 2048
-  const cpuUtil = 32
-  const latency = 18
+  const { currentFps, currentInferenceMs, detections, tracks, metricsHistory } = useOmnivisStore()
+  
+  const latestMetrics = metricsHistory.length > 0 
+    ? metricsHistory[metricsHistory.length - 1] 
+    : null
+  
+  const gpuUtil = latestMetrics?.gpu_util ?? 0
+  const gpuMem = latestMetrics?.gpu_memory ?? 0
+  const cpuUtil = latestMetrics?.cpu_util ?? 0
+  const latency = currentInferenceMs > 0 ? currentInferenceMs : (latestMetrics?.inference_ms ?? 0)
 
   return (
     <div className="glass-card p-3">
@@ -89,7 +95,7 @@ export const MetricGaugeRow: React.FC = () => {
         <MetricGauge value={gpuUtil} max={100} label="GPU" unit="%" color="#6366f1" />
         <MetricGauge value={gpuMem} max={8192} label="VRAM" unit="MB" color="#10b981" />
         <MetricGauge value={cpuUtil} max={100} label="CPU" unit="%" color="#f59e0b" />
-        <MetricGauge value={latency} max={100} label="Latency" unit="ms" color="#ec4899" />
+        <MetricGauge value={latency} max={200} label="Latency" unit="ms" color="#ec4899" />
       </div>
     </div>
   )

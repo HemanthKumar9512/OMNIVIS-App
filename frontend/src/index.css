@@ -22,6 +22,25 @@
   *::-webkit-scrollbar-thumb:hover {
     background: rgba(99, 102, 241, 0.5);
   }
+
+  /* Fix select dropdown options visibility */
+  select option {
+    background-color: #1e293b !important;
+    color: #e2e8f0 !important;
+    padding: 8px 12px;
+  }
+
+  /* Dark mode select styling */
+  select {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #e2e8f0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  select:focus {
+    border-color: rgba(99, 102, 241, 0.5) !important;
+    outline: none;
+  }
 }
 
 /* ── Glass Morphism ──────────────────────────────────────── */

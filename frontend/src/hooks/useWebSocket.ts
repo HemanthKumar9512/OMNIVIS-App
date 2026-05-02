@@ -72,28 +72,40 @@ export function useWebSocket() {
 
   const handleMessage = useCallback((message: any) => {
     const { type, data } = message
-    if (type !== 'result') return
-    if (!data) return
+    console.log('[WS] Received message type:', type, 'keys:', Object.keys(data || {}))
+    
+    if (type !== 'result') {
+      console.log('[WS] Unknown message type:', type)
+      return
+    }
+    if (!data) {
+      console.log('[WS] No data in message')
+      return
+    }
 
     // Annotated frame
     if (data.annotated_frame) {
       setCurrentFrame(data.annotated_frame)
+      console.log('[WS] Frame updated, length:', data.annotated_frame.length)
     }
 
     // Detection results
     if (data.detection) {
       setDetections(data.detection.detections || [])
+      console.log('[WS] Detections:', data.detection.count || 0)
     }
 
     // Face results
     if (data.face) {
       setFaces(data.face.faces || [])
+      console.log('[WS] Faces:', data.face.face_count || 0)
     }
 
     // Tracking results
     if (data.tracking) {
       setTracks(data.tracking.tracks || [])
       setTrails(data.tracking.trails || {})
+      console.log('[WS] Tracks:', data.tracking.track_count || 0)
     }
 
     // Scene graph
@@ -103,6 +115,7 @@ export function useWebSocket() {
         edges: data.scene_graph.edges || [],
         triplets: data.scene_graph.triplets || [],
       })
+      console.log('[WS] Scene graph nodes:', data.scene_graph.nodes?.length || 0)
     }
 
     // Anomaly detection
@@ -120,6 +133,7 @@ export function useWebSocket() {
           })
         }
       }
+      console.log('[WS] Anomaly level:', data.anomaly.alert_level)
     }
 
     // Action recognition
@@ -134,6 +148,7 @@ export function useWebSocket() {
         max: data.depth.max_depth,
         mean: data.depth.mean_depth,
       })
+      console.log('[WS] Depth:', data.depth.mean_depth?.toFixed(2))
     }
 
     // Flow stats
@@ -142,14 +157,20 @@ export function useWebSocket() {
         meanMag: data.optical_flow.mean_magnitude,
         maxMag: data.optical_flow.max_magnitude,
         method: data.optical_flow.method,
+        visualization: data.optical_flow.visualization,
       })
+      console.log('[WS] Flow:', data.optical_flow.mean_magnitude?.toFixed(2))
     }
 
     // Reconstruction / point cloud
     if (data.reconstruction) {
-      if (data.reconstruction.total_points > 0) {
-        // Point cloud data will be fetched separately
+      if (data.reconstruction.total_points > 0 && data.reconstruction.points) {
+        setPointCloud({
+          points: data.reconstruction.points,
+          colors: data.reconstruction.colors || [],
+        })
       }
+      console.log('[WS] 3D Points:', data.reconstruction.total_points || 0)
     }
 
     // Performance metrics
@@ -157,15 +178,16 @@ export function useWebSocket() {
     const inferenceMs = data.total_inference_ms || 0
     setCurrentPerf(fps, inferenceMs)
 
+    const sysMetrics = data.system_metrics || {}
     addMetrics({
       timestamp: data.timestamp || Date.now() / 1000,
       fps,
       inference_ms: inferenceMs,
-      detection_count: data.detection?.count || 0,
-      track_count: data.tracking?.track_count || 0,
-      gpu_util: 0,
-      gpu_memory: 0,
-      cpu_util: 0,
+      detection_count: sysMetrics.detection_count || data.detection?.count || 0,
+      track_count: sysMetrics.track_count || data.tracking?.track_count || 0,
+      gpu_util: sysMetrics.gpu_util ?? data.gpu_util ?? 0,
+      gpu_memory: sysMetrics.gpu_memory ?? data.gpu_memory ?? 0,
+      cpu_util: sysMetrics.cpu_percent ?? data.cpu_util ?? 0,
       map50: data.detection?.map50,
       iou: data.detection?.iou,
       epe: data.optical_flow?.epe,
@@ -173,11 +195,14 @@ export function useWebSocket() {
   }, [])
 
   const sendFrame = useCallback((frameBase64: string) => {
+    console.log('[OMNIVIS] Sending frame to backend, WS state:', wsRef.current?.readyState)
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type: 'frame',
         data: { frame: frameBase64 },
       }))
+    } else {
+      console.warn('[OMNIVIS] WebSocket not open, cannot send frame')
     }
   }, [])
 
@@ -204,5 +229,8 @@ export function useWebSocket() {
     }
   }, [connect])
 
-  return { sendFrame, sendConfig, connect, disconnect }
+  // Expose WebSocket ref for external access
+  const getWsState = useCallback(() => wsRef.current?.readyState, [])
+
+  return { sendFrame, sendConfig, connect, disconnect, wsRef: wsRef as React.MutableRefObject<WebSocket | null>, getWsState }
 }

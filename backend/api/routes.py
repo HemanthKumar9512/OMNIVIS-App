@@ -13,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 import io
 import logging
+import numpy as np
+import cv2
 
 from api.schemas import (
     SessionCreate, SessionOut, ModelSwitchRequest, HealthResponse,
@@ -183,6 +185,45 @@ async def upload_media(
         "file_size": len(content),
         "message": "File uploaded. Connect to /ws/stream to start processing.",
     }
+
+
+@router.post("/upload/simple", tags=["inference"])
+async def upload_media_simple(file: UploadFile = File(...)):
+    """Simplified upload without auth for testing."""
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm", "video/avi"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.content_type}")
+
+    upload_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    file_id = str(uuid.uuid4())
+    ext = os.path.splitext(file.filename)[1] if file.filename else ".bin"
+    file_path = os.path.join(upload_dir, f"{file_id}{ext}")
+
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    return {
+        "file_id": file_id,
+        "file_path": file_path,
+        "file_type": file.content_type,
+        "file_size": len(content),
+    }
+
+
+@router.get("/upload/{file_id}", tags=["inference"])
+async def get_uploaded_file(file_id: str):
+    """Get uploaded file for processing."""
+    upload_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+    
+    for ext in ['.jpg', '.jpeg', '.png', '.webp', '.mp4', '.webm', '.avi', '.bin']:
+        file_path = os.path.join(upload_dir, f"{file_id}{ext}")
+        if os.path.exists(file_path):
+            from fastapi.responses import FileResponse
+            return FileResponse(file_path)
+    
+    raise HTTPException(status_code=404, detail="File not found")
 
 
 @router.get("/sessions", response_model=List[SessionOut], tags=["sessions"])
@@ -374,5 +415,97 @@ async def health_check():
         uptime_seconds=round(time.time() - START_TIME, 1),
         modules_loaded=["detection", "segmentation", "face", "optical_flow",
                         "depth", "reconstruction", "tracking", "scene_graph",
-                        "trajectory", "anomaly", "gait", "action", "gan"],
+                        "trajectory", "anomaly", "gait", "action", "gan", "medical"],
     )
+
+
+# ── Medical Scan Analysis ─────────────────────────────────────
+@router.post("/medical/analyze", tags=["medical"])
+async def analyze_medical_scan(
+    file: UploadFile = File(...),
+    scan_type: str = "auto",
+):
+    """Analyze a medical scan (MRI, CT, X-ray, Ultrasound) for risks and abnormalities."""
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/bmp", "image/tiff"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.content_type}. Supported: JPEG, PNG, WebP, BMP, TIFF")
+
+    content = await file.read()
+    img_array = np.frombuffer(content, np.uint8)
+    image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+
+    if image is None:
+        raise HTTPException(status_code=400, detail="Could not decode image. Please upload a valid medical scan image.")
+
+    try:
+        from modules.medical import MedicalScanAnalyzer
+        analyzer = MedicalScanAnalyzer()
+        result = analyzer.analyze(image, scan_type_hint=scan_type)
+
+        return {
+            "status": "success",
+            "filename": file.filename,
+            "scan_type": result["scan_type"],
+            "overall_risk": result["overall_risk"],
+            "risk_score": result["risk_score"],
+            "finding_count": result["finding_count"],
+            "high_risk_count": result["high_risk_count"],
+            "findings": result["findings"],
+            "summary": result["summary"],
+            "annotated_image": result["annotated_image"],
+            "inference_ms": result["inference_ms"],
+            "disclaimer": "This is an AI-assisted screening analysis. All findings require clinical correlation and should not replace professional medical diagnosis.",
+        }
+    except ImportError:
+        raise HTTPException(status_code=503, detail="Medical analysis module not available. Ensure scikit-learn and OpenCV are installed.")
+    except Exception as e:
+        logger.error(f"Medical analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+@router.post("/medical/analyze-base64", tags=["medical"])
+async def analyze_medical_scan_base64(req: dict):
+    """Analyze a medical scan from base64-encoded image data."""
+    import base64
+
+    image_data = req.get("image", "")
+    scan_type = req.get("scan_type", "auto")
+
+    if not image_data:
+        raise HTTPException(status_code=400, detail="No image data provided")
+
+    try:
+        if "base64," in image_data:
+            image_data = image_data.split("base64,")[1]
+        img_bytes = base64.b64decode(image_data)
+        img_array = np.frombuffer(img_bytes, np.uint8)
+        image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+
+        if image is None:
+            raise HTTPException(status_code=400, detail="Could not decode image")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid image data: {str(e)}")
+
+    try:
+        from modules.medical import MedicalScanAnalyzer
+        analyzer = MedicalScanAnalyzer()
+        result = analyzer.analyze(image, scan_type_hint=scan_type)
+
+        return {
+            "status": "success",
+            "scan_type": result["scan_type"],
+            "overall_risk": result["overall_risk"],
+            "risk_score": result["risk_score"],
+            "finding_count": result["finding_count"],
+            "high_risk_count": result["high_risk_count"],
+            "findings": result["findings"],
+            "summary": result["summary"],
+            "annotated_image": result["annotated_image"],
+            "inference_ms": result["inference_ms"],
+            "disclaimer": "This is an AI-assisted screening analysis. All findings require clinical correlation and should not replace professional medical diagnosis.",
+        }
+    except ImportError:
+        raise HTTPException(status_code=503, detail="Medical analysis module not available.")
+    except Exception as e:
+        logger.error(f"Medical analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")

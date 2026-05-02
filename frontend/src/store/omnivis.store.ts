@@ -116,8 +116,10 @@ interface OmnivisStore {
   // Input source
   inputSource: 'webcam' | 'rtsp' | 'youtube' | 'file';
   inputUrl: string;
+  inputApproved: boolean;
   setInputSource: (s: 'webcam' | 'rtsp' | 'youtube' | 'file') => void;
   setInputUrl: (u: string) => void;
+  setInputApproved: (approved: boolean) => void;
 
   // Modules
   modules: Record<string, ModuleState>;
@@ -186,8 +188,34 @@ interface OmnivisStore {
   setDepthStats: (s: { min: number; max: number; mean: number } | null) => void;
 
   // Flow data
-  flowStats: { meanMag: number; maxMag: number; method: string } | null;
-  setFlowStats: (s: { meanMag: number; maxMag: number; method: string } | null) => void;
+  flowStats: { meanMag: number; maxMag: number; method: string; visualization?: string } | null;
+  setFlowStats: (s: { meanMag: number; maxMag: number; method: string; visualization?: string } | null) => void;
+
+  // Uploaded file
+  uploadedFile: { type: string; name: string; data: string; contentType: string } | null;
+  setUploadedFile: (f: { type: string; name: string; data: string; contentType: string } | null) => void;
+
+  // Medical scan analysis
+  medicalResult: {
+    scanType: string;
+    overallRisk: string;
+    riskScore: number;
+    findings: Array<{
+      type: string;
+      severity: string;
+      riskLevel: string;
+      score: number;
+      description: string;
+      recommendation: string;
+      confidence: number;
+    }>;
+    summary: string;
+    annotatedImage: string | null;
+    inferenceMs: number;
+  } | null;
+  setMedicalResult: (r: any | null) => void;
+  isAnalyzingMedical: boolean;
+  setIsAnalyzingMedical: (v: boolean) => void;
 }
 
 export const useOmnivisStore = create<OmnivisStore>((set, get) => ({
@@ -206,8 +234,10 @@ export const useOmnivisStore = create<OmnivisStore>((set, get) => ({
   // Input source
   inputSource: 'webcam',
   inputUrl: '',
-  setInputSource: (s) => set({ inputSource: s }),
+  inputApproved: false,
+  setInputSource: (s) => set({ inputSource: s, inputApproved: false }),
   setInputUrl: (u) => set({ inputUrl: u }),
+  setInputApproved: (approved) => set({ inputApproved: approved }),
 
   // Modules
   modules: {
@@ -216,7 +246,7 @@ export const useOmnivisStore = create<OmnivisStore>((set, get) => ({
     face: { enabled: true, loaded: false },
     optical_flow: { enabled: true, loaded: false },
     depth: { enabled: true, loaded: false },
-    reconstruction: { enabled: false, loaded: false },
+    reconstruction: { enabled: true, loaded: false },
     tracking: { enabled: true, loaded: false },
     scene_graph: { enabled: true, loaded: false },
     trajectory: { enabled: true, loaded: false },
@@ -323,4 +353,14 @@ export const useOmnivisStore = create<OmnivisStore>((set, get) => ({
   // Flow
   flowStats: null,
   setFlowStats: (s) => set({ flowStats: s }),
+
+  // Uploaded file
+  uploadedFile: null,
+  setUploadedFile: (f) => set({ uploadedFile: f }),
+
+  // Medical scan analysis
+  medicalResult: null,
+  setMedicalResult: (r) => set({ medicalResult: r }),
+  isAnalyzingMedical: false,
+  setIsAnalyzingMedical: (v) => set({ isAnalyzingMedical: v }),
 }))

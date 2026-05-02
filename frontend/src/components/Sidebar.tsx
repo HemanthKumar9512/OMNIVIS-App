@@ -3,13 +3,15 @@
  * Left sidebar: Module toggles, model selectors, threshold sliders.
  * Right sidebar: Metric charts, detection list, alert log.
  */
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useOmnivisStore } from '../store/omnivis.store'
 import { MetricCharts } from './MetricChart'
 import { MetricGaugeRow } from './MetricGauge'
 import { AlertBanner } from './AlertBanner'
 import { SceneGraph3D } from './SceneGraph3D'
 import { PointCloud3D } from './PointCloud3D'
+import { FileUploader } from './FileUploader'
+import { MedicalScanPanel } from './MedicalScanPanel'
 
 const MODULE_INFO: Record<string, { icon: string; label: string; desc: string }> = {
   detection: { icon: '🎯', label: 'Detection', desc: 'YOLOv8 object detection' },
@@ -41,6 +43,7 @@ export const LeftSidebar: React.FC = () => {
     nmsThreshold, setNmsThreshold,
     selectedModel, setSelectedModel,
     inputSource, setInputSource, inputUrl, setInputUrl,
+    inputApproved, setInputApproved,
   } = useOmnivisStore()
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
@@ -61,11 +64,14 @@ export const LeftSidebar: React.FC = () => {
             onChange={e => setInputSource(e.target.value as any)}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white/80 focus:outline-none focus:border-omni-500/50"
           >
-            <option value="webcam">Webcam</option>
+            <option value="webcam">Webcam (Live)</option>
+            <option value="file">Upload File</option>
             <option value="rtsp">RTSP Stream</option>
             <option value="youtube">YouTube URL</option>
-            <option value="file">File Upload</option>
           </select>
+          {inputSource === 'file' && (
+            <FileUploader />
+          )}
           {(inputSource === 'rtsp' || inputSource === 'youtube') && (
             <input
               type="text"
@@ -75,6 +81,18 @@ export const LeftSidebar: React.FC = () => {
               className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white/80 placeholder-white/20 focus:outline-none focus:border-omni-500/50"
             />
           )}
+          {/* Approval Button */}
+          <button
+            onClick={() => setInputApproved(true)}
+            disabled={inputApproved}
+            className={`w-full py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200 
+              ${inputApproved 
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-default' 
+                : 'bg-omni-500/20 text-omni-300 border border-omni-500/30 hover:bg-omni-500/30 hover:border-omni-500/50'
+              }`}
+          >
+            {inputApproved ? '✓ Input Approved' : 'Approve Input'}
+          </button>
         </div>
 
         {/* Model Selector */}
@@ -160,28 +178,44 @@ export const LeftSidebar: React.FC = () => {
 }
 
 export const RightSidebar: React.FC = () => {
+  const [showMedical, setShowMedical] = useState(false)
+
   return (
     <div className="glass-sidebar w-[300px] flex flex-col h-full overflow-hidden border-l border-white/5">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-white/5">
+      <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
         <h2 className="text-xs font-bold text-white/60 uppercase tracking-widest">Analytics</h2>
+        <button
+          onClick={() => setShowMedical(!showMedical)}
+          className={`text-[10px] px-2 py-0.5 rounded transition-all ${
+            showMedical ? 'bg-omni-500/20 text-omni-300' : 'text-white/30 hover:text-white/50'
+          }`}
+        >
+          {showMedical ? 'Show Real-time' : 'Medical Scan'}
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {/* System Gauges */}
-        <MetricGaugeRow />
+        {showMedical ? (
+          <MedicalScanPanel />
+        ) : (
+          <>
+            {/* System Gauges */}
+            <MetricGaugeRow />
 
-        {/* Alert Banner */}
-        <AlertBanner />
+            {/* Alert Banner */}
+            <AlertBanner />
 
-        {/* Metric Charts */}
-        <MetricCharts />
+            {/* Metric Charts */}
+            <MetricCharts />
 
-        {/* Scene Graph */}
-        <SceneGraph3D />
+            {/* Scene Graph */}
+            <SceneGraph3D />
 
-        {/* Point Cloud */}
-        <PointCloud3D />
+            {/* Point Cloud */}
+            <PointCloud3D />
+          </>
+        )}
       </div>
     </div>
   )

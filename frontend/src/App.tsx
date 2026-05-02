@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react'
 import { useOmnivisStore } from './store/omnivis.store'
 import { useWebSocket } from './hooks/useWebSocket'
 import { useCamera } from './hooks/useCamera'
+import { useVideoProcessor } from './hooks/useVideoProcessor'
 import { CanvasPanel } from './components/CanvasPanel'
 import { LeftSidebar, RightSidebar } from './components/Sidebar'
 import { DetectionStrip } from './components/DetectionStrip'
@@ -14,19 +15,58 @@ const App: React.FC = () => {
   const {
     isConnected, theme, toggleTheme, currentFps, currentInferenceMs,
     isRecording, toggleRecording, detections, alertLevel,
-    language, setLanguage, inputSource,
+    language, setLanguage, inputSource, inputApproved, uploadedFile,
   } = useOmnivisStore()
 
-  const { sendFrame, sendConfig } = useWebSocket()
+  const { sendFrame, sendConfig, connect, disconnect, wsRef } = useWebSocket()
   const [showSettings, setShowSettings] = useState(false)
 
-  // Camera hook — sends frames to WebSocket
-  const { videoRef, isActive: cameraActive, error: cameraError } = useCamera({
-    enabled: inputSource === 'webcam' && isConnected,
+  // Debug: Log connection state changes
+  useEffect(() => {
+    console.log('[APP] Connection state:', isConnected, 'InputSource:', inputSource, 'InputApproved:', inputApproved)
+  }, [isConnected, inputSource, inputApproved])
+
+  // Handle all input types - send frames to backend
+  useEffect(() => {
+    console.log('[APP] useEffect triggered:', { inputSource, uploadedFile: uploadedFile?.type, isConnected, inputApproved })
+    
+    if (!isConnected || !inputApproved) {
+      console.log('[APP] Skipping - not connected or not approved')
+      return
+    }
+
+    // Handle image upload - send once
+    if (inputSource === 'file' && uploadedFile?.type === 'image') {
+      console.log('[APP] Sending image frame...')
+      const timer = setTimeout(() => sendFrame(uploadedFile.data), 1000)
+      return () => clearTimeout(timer)
+    }
+    
+    // For webcam and video, the hooks handle continuous sending
+    // Just need to make sure they're triggered when conditions change
+  }, [inputSource, uploadedFile, isConnected, inputApproved, sendFrame])
+
+  // Camera hook — sends frames continuously when webcam mode
+  const { videoRef: camVideoRef, isActive: cameraActive, error: cameraError } = useCamera({
+    enabled: inputSource === 'webcam' && isConnected && inputApproved,
     width: 640,
     height: 480,
-    fps: 12,
-    onFrame: sendFrame,
+    fps: 8,  // Lower FPS for stability
+    onFrame: (frame) => {
+      console.log('[APP] Camera sending frame, length:', frame.length)
+      sendFrame(frame)
+    },
+  })
+
+  // Video processor for uploaded videos - sends frames continuously
+  const { videoRef: vidVideoRef, isPlaying } = useVideoProcessor({
+    videoUrl: (inputSource === 'file' && uploadedFile?.type === 'video') ? uploadedFile.data : null,
+    enabled: inputSource === 'file' && uploadedFile?.type === 'video' && isConnected && inputApproved,
+    fps: 8,  // Lower FPS for stability
+    onFrame: (frame) => {
+      console.log('[APP] Video sending frame, length:', frame.length)
+      sendFrame(frame)
+    },
   })
 
   // Apply theme
@@ -159,7 +199,7 @@ const App: React.FC = () => {
         <LeftSidebar />
 
         {/* Center — 2×2 Canvas Grid */}
-        <main className="flex-1 p-3 flex flex-col gap-3 min-w-0">
+        <main className="flex-1 p-3 flex flex-col gap-3 min-w-0 overflow-y-auto">
           <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-3 min-h-0">
             <CanvasPanel panelIndex={0} />
             <CanvasPanel panelIndex={1} />
@@ -176,7 +216,8 @@ const App: React.FC = () => {
       <DetectionStrip />
 
       {/* Hidden video element for camera */}
-      <video ref={videoRef} className="hidden" muted playsInline />
+      <video ref={camVideoRef} className="hidden" muted playsInline />
+      <video ref={vidVideoRef} className="hidden" muted playsInline />
 
       {/* Camera error toast */}
       {cameraError && (
