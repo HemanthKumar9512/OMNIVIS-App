@@ -5,7 +5,8 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useOmnivisStore } from '../store/omnivis.store'
 
-const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:8000/ws/stream`
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:8000`
+const WS_URL = `${BACKEND_URL}/ws/stream`
 const RECONNECT_DELAY = 3000
 const MAX_RECONNECT_ATTEMPTS = 10
 
