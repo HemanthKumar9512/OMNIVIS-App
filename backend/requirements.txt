@@ -32,12 +32,26 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 httpx==0.27.0
 
-# ML / Anomaly
+# ML / Anomaly / Classification
 scikit-learn>=1.3.0
+xgboost>=2.0.0
+lightgbm>=4.0.0
 
-# Face
-# insightface>=0.7.3  # Optional — install separately
-# mediapipe>=0.10.9  # Optional — install separately
+# Face Detection & Recognition
+insightface>=0.7.3
+mediapipe>=0.10.9
+onnx>=1.15.0
+onnxruntime-gpu>=1.17.0
+
+# Medical Imaging
+pydicom>=2.4.0
+simpleitk>=2.3.0
+albumentations>=1.3.0
+kaggle>=1.6.0
+
+# Streaming
+imageio>=2.33.0
+imageio-ffmpeg>=0.4.9
 
 # Reporting
 reportlab>=4.1.0
@@ -51,7 +65,13 @@ Pillow>=10.0.0
 pydantic>=2.5.0
 pydantic-settings>=2.1.0
 python-dotenv>=1.0.0
+tqdm>=4.66.0
+pandas>=2.1.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
 
-# Optional (install for full functionality)
-# pywt>=1.5.0  # Wavelet analysis
-# scipy>=1.11.0  # Matrix operations
+# Optional
+pywt>=1.5.0
+scipy>=1.11.0
+requests>=2.31.0
+gdown>=4.7.0
